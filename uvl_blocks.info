@@ -1,0 +1,4 @@
+name = "UVL blocks"
+description = "Provides custom blocks for the UVL Digital collevtion website"
+package = "Custom"
+core = "7.x"
