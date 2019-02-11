@@ -1,0 +1,177 @@
+<?php
+
+/**
+* Implements hook_block_info().
+*/
+function uvl_blocks_block_info() {
+  $blocks['uvl_blocks_collection_images'] = array(
+    'info' => t('UVL collection images block'),
+    'cache' => DRUPAL_NO_CACHE
+  );
+
+  $blocks['uvl_blocks_reset_facets'] = array(
+    'info' => t('UVL Reset filters'),
+    'cache' => DRUPAL_NO_CACHE
+  );
+
+  return $blocks;
+}
+
+/**
+* Implements hook_block_view().
+ */
+function uvl_blocks_block_view($delta = '') {
+  $block = array();
+  
+  switch ($delta) {
+    case 'uvl_blocks_collection_images':
+      $block['content'] = uvl_blocks_collection_images_content();
+      break;
+    case 'uvl_blocks_reset_facets':
+      $block['content'] = uvl_blocks_reset_facets_content();
+      break;
+  }
+  return $block;
+}
+
+/**
+* Implements hook_theme().
+ */
+function uvl_blocks_theme() {
+  $module_path = drupal_get_path('module', 'uvl_blocks');
+  $base = array(
+    'path' => "$module_path/templates",
+  );
+  return array(
+    'uvl_blocks_block_content' => $base + array(
+        'template' => 'uvl_blocks_block',
+        'variables' => array('items' => NULL,),
+      ),
+  );
+}
+
+/**
+ * Render the content of the block on the collections page.
+ */
+function uvl_blocks_collection_images_content(){
+
+  // Only act on a collection page
+  if (strpos(arg(2), 'collection:') !== false) {
+    $pid = arg(2);
+    $query = new EntityFieldQuery();
+    $query->entityCondition('entity_type', 'node')
+      ->entityCondition('bundle', 'collection')
+      ->propertyCondition('status', NODE_PUBLISHED)
+      ->fieldCondition('field_pid', 'value', $pid, '=')
+      ->range(0, 1);
+    $result = $query->execute();
+
+    // Check if there is a node
+    if (isset($result['node'])) {
+      $nids = array_keys($result['node']);
+      $node= array_shift(entity_load('node', $nids));
+      $items = array();
+      // Add a mor button to the images
+      $items['button-more']['text'] = t('Show all items');
+      $items['button-more']['link'] =  '/islandora/search?type=dismax&islandora_solr_search_navigation=0&f[0]=RELS_EXT_isMemberOfCollection_uri_ms:%22info\:fedora\/'. str_replace(':', '\:' , $pid).'%22';
+
+      $i = 0;
+      // Get all images
+      foreach ($node->field_intro_image['und'] as $image_file){
+        if ($image_file) {
+
+          $image_path = '';
+          if (isset($image_file['uri'])) {
+            $image_path = $image_file['uri'];
+          }
+          $desc = '';
+          $link = '';
+          $title ='';
+          if(!empty($node->field_intro_image_link['und'][$i]) ){
+            $link = $node->field_intro_image_link['und'][$i];
+            $desc = $link['title'];
+            $title =$link['title'];
+            $link = $link['url'];
+          }
+          $image = theme('image',array(
+            'path' => ($image_path),
+            'title' => $desc,
+            'attributes' => array('class' => 'dc-object-fit'),
+          ));
+
+          $items['feat-browser'][$i] = array(
+            '#tree' => TRUE,
+            'image' => array(
+              '#prefix' => '<li class="dc-grid-item"><a href="'.
+                $link.'"><div class="dc-grid-pic">',
+              '#type' => 'markup',
+              '#markup' => $image,
+              '#suffix' => '</div>',
+            ),
+            'title' => array(
+              '#prefix' => '<div class="dc-grid-caption">',
+              '#type' => 'markup',
+              '#markup' => '<h3>'.$title.'</h3><div>'.$desc.'</div>',
+              '#suffix' => '</a></li>',
+            ),
+          );
+        }
+        $i++;
+      }
+
+      return theme('uvl_blocks_block_content', array('items' => $items));
+    }
+  }
+}
+
+
+/**
+ * Implements hook_page_alter().
+ *
+ * We need this to disable the sidebar region when a search on a collection
+ * has been done and there is a node to represent the collection.
+ */
+function uvl_blocks_page_alter(&$page) {
+  // Only act on a collection page
+  if (strpos(arg(2), 'collection:') !== false) {
+    $pid = arg(2);
+    $query = new EntityFieldQuery();
+    $query->entityCondition('entity_type', 'node')
+      ->entityCondition('bundle', 'collection')
+      ->propertyCondition('status', NODE_PUBLISHED)
+      ->fieldCondition('field_pid', 'value', $pid, '=')
+      ->range(0, 1);
+    $result = $query->execute();
+
+    // Check if there is a node
+    if (isset($result['node'])) {
+      // There is a node so disable the sidebar
+      unset($page['sidebar_first']);
+    }
+  }
+
+}
+
+/**
+ * Render the link to reset the filters.
+ */
+function uvl_blocks_reset_facets_content(){
+  // Get the current url
+  $current_path  = request_uri();
+
+  $content = '';
+
+  // Parse the url
+  $parsed_url = drupal_parse_url($current_path);
+
+  //Check if facet param is set
+  if (!empty($parsed_url['query']['f'])){
+    //We have an facet in the url so unset the facets
+    unset($parsed_url['query']['f']);
+    //Rebuild the url including query params
+    $link = l('reset filters', $parsed_url['path'], array('query' => $parsed_url['query']));
+    $content = '<div class="dc-filter-anew">' . $link .'</div>';
+  }
+  return $content;
+
+}
