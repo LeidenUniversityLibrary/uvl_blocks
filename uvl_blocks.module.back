@@ -170,7 +170,7 @@ function uvl_blocks_reset_facets_content(){
     unset($parsed_url['query']['f']);
     //Rebuild the url including query params
     $link = l('reset filters', $parsed_url['path'], array('query' => $parsed_url['query']));
-    $content = '<pre style="display:none">'.print_r(drupal_get_breadcrumb(),true).'</pre><div class="dc-filter-anew">' . $link .'</div>';
+    $content = '<div class="dc-filter-anew">' . $link .'</div>';
   }
   return $content;
 
