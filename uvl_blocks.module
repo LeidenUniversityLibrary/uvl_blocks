@@ -8,9 +8,12 @@ function uvl_blocks_block_info() {
     'info' => t('UVL collection images block'),
     'cache' => DRUPAL_NO_CACHE
   );
-
   $blocks['uvl_blocks_reset_facets'] = array(
     'info' => t('UVL Reset filters'),
+    'cache' => DRUPAL_NO_CACHE
+  );
+  $blocks['uvl_blocks_featured_more'] = array(
+    'info' => t('UVL featured more block'),
     'cache' => DRUPAL_NO_CACHE
   );
 
@@ -21,7 +24,7 @@ function uvl_blocks_block_info() {
 * Implements hook_block_view().
  */
 function uvl_blocks_block_view($delta = '') {
-  $block = array();
+  $block = [];
   
   switch ($delta) {
     case 'uvl_blocks_collection_images':
@@ -29,6 +32,9 @@ function uvl_blocks_block_view($delta = '') {
       break;
     case 'uvl_blocks_reset_facets':
       $block['content'] = uvl_blocks_reset_facets_content();
+      break;
+    case 'uvl_blocks_featured_more':
+      $block['content'] = uvl_blocks_featured_readmore_content();
       break;
   }
   return $block;
@@ -54,6 +60,7 @@ function uvl_blocks_theme() {
  * Render the content of the block on the collections page.
  */
 function uvl_blocks_collection_images_content(){
+  $items = [];
 
   // Only act on a collection page
   if (strpos(arg(2), 'collection:') !== false) {
@@ -77,7 +84,7 @@ function uvl_blocks_collection_images_content(){
 
       $i = 0;
       // Get all images
-      foreach ($node->field_intro_image['und'] as $image_file){
+      foreach ($node->field_intro_image[LANGUAGE_NONE] as $image_file){
         if ($image_file) {
 
           $image_path = '';
@@ -87,8 +94,8 @@ function uvl_blocks_collection_images_content(){
           $desc = '';
           $link = '';
           $title ='';
-          if(!empty($node->field_intro_image_link['und'][$i]) ){
-            $link = $node->field_intro_image_link['und'][$i];
+          if(!empty($node->field_intro_image_link[LANGUAGE_NONE][$i]) ){
+            $link = $node->field_intro_image_link[LANGUAGE_NONE][$i];
             $desc = $link['title'];
             $title =$link['title'];
             $link = $link['url'];
@@ -118,10 +125,9 @@ function uvl_blocks_collection_images_content(){
         }
         $i++;
       }
-
-      return theme('uvl_blocks_block_content', array('items' => $items));
     }
   }
+  return theme('uvl_blocks_block_content', array('items' => $items));
 }
 
 
@@ -149,7 +155,6 @@ function uvl_blocks_page_alter(&$page) {
       unset($page['sidebar_first']);
     }
   }
-
 }
 
 /**
@@ -173,5 +178,30 @@ function uvl_blocks_reset_facets_content(){
     $content = '<pre style="display:none">'.print_r(drupal_get_breadcrumb(),true).'</pre><div class="dc-filter-anew">' . $link .'</div>';
   }
   return $content;
+}
 
+/**
+ * Renders the show more link for subcollection "featured" block.
+ */
+function uvl_blocks_featured_readmore_content() {
+  $content = '';
+
+  // Get the subcollection node object from current url.
+  $alias = drupal_get_path_alias();
+  $path = drupal_lookup_path("source", $alias);
+  $node = menu_get_object("node", 1, $path);
+
+  if (!empty($cid = $node->field_collection_identifier[LANGUAGE_NONE][0]['safe_value'])) {
+    // Generate link with query parameters for Islandora Solr search.
+    $content = l(t('See all items'), '/islandora/search', array(
+      'query' => array(
+        'islandora_solr_search_navigation' => 1,
+        'f[0]' => 'RELS_EXT_isMemberOfCollection_uri_ms:"info\:fedora\/' . $cid . '"'
+      ),
+      'attributes' => array(
+        'class' => 'solr-more-link see-all-items'
+      )
+    ));
+  }
+  return $content;
 }
