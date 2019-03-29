@@ -16,9 +16,18 @@ function uvl_blocks_block_info() {
     'info' => t('UVL featured more block'),
     'cache' => DRUPAL_NO_CACHE
   );
+  $blocks['uvl_blocks_parent_collections'] = array(
+    'info' => t('UVL Islandora parent collections'),
+    'cache' => DRUPAL_NO_CACHE
+  );
 
   return $blocks;
 }
+
+$blocks['islandora_parent_collections'] = array(
+  // info: Search all items.
+  'info' => t('Search all items'),
+);
 
 /**
 * Implements hook_block_view().
@@ -35,6 +44,12 @@ function uvl_blocks_block_view($delta = '') {
       break;
     case 'uvl_blocks_featured_more':
       $block['content'] = uvl_blocks_featured_readmore_content();
+      break;
+    case 'uvl_blocks_parent_collections':
+      $block['content'] = [
+        '#parent_collections' => uvl_blocks_parent_collections(),
+        '#theme' => 'parent_collections_block'
+      ];
       break;
   }
   return $block;
@@ -76,7 +91,7 @@ function uvl_blocks_theme() {
   );
   return array(
     'uvl_blocks_block_content' => $base + array(
-        'template' => 'uvl_blocks_block',
+        'template' => 'uvl_blocks_parent_collections--block',
         'variables' => array('items' => NULL,),
       ),
   );
@@ -232,4 +247,26 @@ function uvl_blocks_featured_readmore_content() {
     ));
   }
   return $content;
+}
+
+/**
+ * Create the parent collections array for the "parent collection" block.
+ */
+function uvl_blocks_parent_collections() {
+  // Get islandora PID from URL.
+  $alias = drupal_get_path_alias();
+  $path = explode('/', urldecode($alias) );
+  $pid = $path[2];
+  $islandora_object = islandora_object_load($pid);
+
+  module_load_include('inc', 'islandora', 'includes/datastream');
+  module_load_include('inc', 'islandora', 'includes/utilities');
+  module_load_include('inc', 'islandora', 'includes/metadata');
+
+  $variables['parent_collections'] = islandora_get_parents_from_rels_ext($islandora_object);
+  $variables['metadata'] = islandora_retrieve_metadata_markup($islandora_object);
+  $variables['description'] = islandora_retrieve_description_markup($islandora_object);
+
+
+  return $variables['parent_collections'];
 }
