@@ -82,10 +82,6 @@ function uvl_blocks_theme() {
     'path' => "$module_path/templates",
   ];
   return [
-    'uvl_blocks_block_content' => $base + [
-        'template' => 'block--uvl_blocks_parent_collections--block',
-        'variables' => ['items' => NULL,],
-      ],
     'block__uvl_blocks_parent_collections' => $base + [
       'template'      => 'block--uvl_blocks_parent_collections',
       'original hook' => 'block',
@@ -271,17 +267,17 @@ function uvl_blocks_parent_collections() {
   if (!empty($islandora_object)) {
     $ancestors = islandora_get_parents_from_rels_ext($islandora_object);
     foreach ($ancestors as $collection) {
-      // Create a link from a collection node if existing, else from Islandora.
-      if ($node = _uvl_blocks_query_node_by_field($collection->objectId)) {
-        $path = 'node/' . (int) $node->nid;
-        $alias = drupal_get_path_alias($path);
-        $variables['parent_collections'][] = l(t($node->title), $alias);
-      }
-      else {
-        $variables['parent_collections'][] = l(
-          t('test'),
-          '/islandora/object/' . $collection->objectId);
-      }
+//      // Create a link from a collection node if existing, else from Islandora.
+//      if ($node = _uvl_blocks_query_node_by_field($collection->objectId)) {
+//        $path = 'node/' . (int) $node->nid;
+//        $alias = drupal_get_path_alias($path);
+//        $variables['parent_collections'][] = l(t($node->title), $alias);
+//      }
+//      else {
+//        $variables['parent_collections'][] = l(
+//          t('test'),
+//          '/islandora/object/' . $collection->objectId);
+//      }
     }
     $variables['nodes'] = '';
   }
