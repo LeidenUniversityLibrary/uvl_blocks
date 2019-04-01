@@ -24,11 +24,6 @@ function uvl_blocks_block_info() {
   return $blocks;
 }
 
-$blocks['islandora_parent_collections'] = array(
-  // info: Search all items.
-  'info' => t('Search all items'),
-);
-
 /**
 * Implements hook_block_view().
  */
@@ -46,10 +41,7 @@ function uvl_blocks_block_view($delta = '') {
       $block['content'] = uvl_blocks_featured_readmore_content();
       break;
     case 'uvl_blocks_parent_collections':
-      $block['content'] = [
-        '#parent_collections' => uvl_blocks_parent_collections(),
-        '#theme' => 'parent_collections_block'
-      ];
+      $block['content'] = theme('block__uvl_blocks_parent_collections');
       break;
   }
   return $block;
@@ -86,15 +78,20 @@ function uvl_blocks_block_save($delta = '', $edit = []) {
  */
 function uvl_blocks_theme() {
   $module_path = drupal_get_path('module', 'uvl_blocks');
-  $base = array(
+  $base = [
     'path' => "$module_path/templates",
-  );
-  return array(
-    'uvl_blocks_block_content' => $base + array(
-        'template' => 'uvl_blocks_parent_collections--block',
-        'variables' => array('items' => NULL,),
-      ),
-  );
+  ];
+  return [
+    'uvl_blocks_block_content' => $base + [
+        'template' => 'block--uvl_blocks_parent_collections--block',
+        'variables' => ['items' => NULL,],
+      ],
+    'block__uvl_blocks_parent_collections' => $base + [
+      'template'      => 'block--uvl_blocks_parent_collections',
+      'original hook' => 'block',
+      'variables' => ['items' => uvl_blocks_parent_collections()],
+    ],
+  ];
 }
 
 /**
@@ -251,22 +248,65 @@ function uvl_blocks_featured_readmore_content() {
 
 /**
  * Create the parent collections array for the "parent collection" block.
+ *
+ * @return array
+ *   Collection with parent collections.
  */
 function uvl_blocks_parent_collections() {
   // Get islandora PID from URL.
   $alias = drupal_get_path_alias();
-  $path = explode('/', urldecode($alias) );
-  $pid = $path[2];
+  $path = explode('/', urldecode($alias));
+  if ($path[0] == 'islandora' && $path[1] == 'object' && isset($path[2])) {
+    $pid = $path[2];
+  }
+  else {
+    return ['parent_collections' => []];
+  }
+
+  // Get Islandora object from PID;
   $islandora_object = islandora_object_load($pid);
 
   module_load_include('inc', 'islandora', 'includes/datastream');
-  module_load_include('inc', 'islandora', 'includes/utilities');
-  module_load_include('inc', 'islandora', 'includes/metadata');
 
-  $variables['parent_collections'] = islandora_get_parents_from_rels_ext($islandora_object);
-  $variables['metadata'] = islandora_retrieve_metadata_markup($islandora_object);
-  $variables['description'] = islandora_retrieve_description_markup($islandora_object);
+  if (!empty($islandora_object)) {
+    $ancestors = islandora_get_parents_from_rels_ext($islandora_object);
+    foreach ($ancestors as $collection) {
+      // Create a link from a collection node if existing, else from Islandora.
+      if ($node = _uvl_blocks_query_node_by_field($collection->objectId)) {
+        $path = 'node/' . (int) $node->nid;
+        $alias = drupal_get_path_alias($path);
+        $variables['parent_collections'][] = l(t($node->title), $alias);
+      }
+      else {
+        $variables['parent_collections'][] = l(
+          t('test'),
+          '/islandora/object/' . $collection->objectId);
+      }
+    }
+    $variables['nodes'] = '';
+  }
+  else {
+    $variables['parent_collections'] = [];
+  }
 
+  return $variables;
+}
 
-  return $variables['parent_collections'];
+/**
+ * Helper function to query nodes by Islandora object ID string.
+ *
+ * @param string $pid
+ *   The Islandora object identifier.
+ */
+function _uvl_blocks_query_node_by_field($pid) {
+  $query = new EntityFieldQuery();
+
+  $query->entityCondition('entity_type', 'node')
+    ->entityCondition('bundle', ['collection', 'subcollection'])
+    ->propertyCondition('status', 1)
+    ->fieldCondition('field_collection_id', 'value', $pid, '=')
+    ->range(0, 1)
+    ->addMetaData('account', user_load(1));
+
+  return $query->execute();
 }
