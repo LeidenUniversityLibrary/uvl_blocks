@@ -16,10 +16,6 @@ function uvl_blocks_block_info() {
     'info' => t('UVL featured more block'),
     'cache' => DRUPAL_NO_CACHE
   );
-  $blocks['uvl_blocks_parent_collections'] = array(
-    'info' => t('UVL Islandora parent collections'),
-    'cache' => DRUPAL_NO_CACHE
-  );
 
   return $blocks;
 }
@@ -39,9 +35,6 @@ function uvl_blocks_block_view($delta = '') {
       break;
     case 'uvl_blocks_featured_more':
       $block['content'] = uvl_blocks_featured_readmore_content();
-      break;
-    case 'uvl_blocks_parent_collections':
-      $block['content'] = theme('block__uvl_blocks_parent_collections');
       break;
   }
   return $block;
@@ -71,23 +64,6 @@ function uvl_blocks_block_save($delta = '', $edit = []) {
   if ($delta == 'uvl_blocks_featured_more') {
     variable_set('featured_link_title', $edit['link_title']);
   }
-}
-
-/**
-* Implements hook_theme().
- */
-function uvl_blocks_theme() {
-  $module_path = drupal_get_path('module', 'uvl_blocks');
-  $base = [
-    'path' => "$module_path/templates",
-  ];
-  return [
-    'block__uvl_blocks_parent_collections' => $base + [
-      'template'      => 'block--uvl_blocks_parent_collections',
-      'original hook' => 'block',
-      'variables' => ['items' => uvl_blocks_parent_collections()],
-    ],
-  ];
 }
 
 /**
@@ -243,56 +219,13 @@ function uvl_blocks_featured_readmore_content() {
 }
 
 /**
- * Create the parent collections array for the "parent collection" block.
- *
- * @return array
- *   Collection with parent collections.
- */
-function uvl_blocks_parent_collections() {
-  // Get islandora PID from URL.
-  $alias = drupal_get_path_alias();
-  $path = explode('/', urldecode($alias));
-  if ($path[0] == 'islandora' && $path[1] == 'object' && isset($path[2])) {
-    $pid = $path[2];
-  }
-  else {
-    return ['parent_collections' => []];
-  }
-
-  // Get Islandora object from PID;
-  $islandora_object = islandora_object_load($pid);
-
-  module_load_include('inc', 'islandora', 'includes/datastream');
-
-  if (!empty($islandora_object)) {
-    $ancestors = islandora_get_parents_from_rels_ext($islandora_object);
-    foreach ($ancestors as $collection) {
-//      // Create a link from a collection node if existing, else from Islandora.
-//      if ($node = _uvl_blocks_query_node_by_field($collection->objectId)) {
-//        $path = 'node/' . (int) $node->nid;
-//        $alias = drupal_get_path_alias($path);
-//        $variables['parent_collections'][] = l(t($node->title), $alias);
-//      }
-//      else {
-//        $variables['parent_collections'][] = l(
-//          t('test'),
-//          '/islandora/object/' . $collection->objectId);
-//      }
-    }
-    $variables['nodes'] = '';
-  }
-  else {
-    $variables['parent_collections'] = [];
-  }
-
-  return $variables;
-}
-
-/**
  * Helper function to query nodes by Islandora object ID string.
  *
  * @param string $pid
  *   The Islandora object identifier.
+ *
+ * @return array
+ *   Array with entity identifiers.
  */
 function _uvl_blocks_query_node_by_field($pid) {
   $query = new EntityFieldQuery();
