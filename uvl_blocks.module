@@ -67,6 +67,22 @@ function uvl_blocks_block_save($delta = '', $edit = []) {
 }
 
 /**
+* Implements hook_theme().
+ */
+function uvl_blocks_theme() {
+  $module_path = drupal_get_path('module', 'uvl_blocks');
+  $base = [
+    'path' => "$module_path/templates",
+  ];
+  return [
+    'uvl_blocks_block_content' => $base + [
+      'template'      => 'uvl_blocks_block',
+      'original hook' => 'block',
+    ],
+  ];
+}
+
+/**
  * Render the content of the block on the collections page.
  */
 function uvl_blocks_collection_images_content(){
@@ -137,7 +153,7 @@ function uvl_blocks_collection_images_content(){
       }
     }
   }
-  return $items;
+  return theme('uvl_blocks_block_content', array('items' => $items));
 }
 
 
