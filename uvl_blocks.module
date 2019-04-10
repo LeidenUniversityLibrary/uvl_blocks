@@ -137,7 +137,7 @@ function uvl_blocks_collection_images_content(){
       }
     }
   }
-  return theme('uvl_blocks_block_content', array('items' => $items));
+  return $items;
 }
 
 
