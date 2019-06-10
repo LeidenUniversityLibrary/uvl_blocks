@@ -16,7 +16,10 @@ function uvl_blocks_block_info() {
     'info' => t('UVL featured more block'),
     'cache' => DRUPAL_NO_CACHE
   );
-
+  $blocks['uvl_blocks_featured_search'] = array(
+    'info' => t('UVL featured search block'),
+    'cache' => DRUPAL_NO_CACHE
+  );
   return $blocks;
 }
 
@@ -35,6 +38,9 @@ function uvl_blocks_block_view($delta = '') {
       break;
     case 'uvl_blocks_featured_more':
       $block['content'] = uvl_blocks_featured_readmore_content();
+      break;
+    case 'uvl_blocks_featured_search':
+      $block['content'] = uvl_blocks_featured_search_content();
       break;
   }
   return $block;
@@ -216,7 +222,6 @@ function uvl_blocks_featured_readmore_content() {
   $alias = drupal_get_path_alias();
   $path = drupal_lookup_path("source", $alias);
   $node = menu_get_object("node", 1, $path);
-
   if (!empty($cid = $node->field_collection_identifier[LANGUAGE_NONE][0]['safe_value'])) {
     // Generate link with query parameters for Islandora Solr search.
     $content = l(t(variable_get('featured_link_title', 'See all items')),
@@ -231,6 +236,52 @@ function uvl_blocks_featured_readmore_content() {
       )
     ));
   }
+  return $content;
+}
+
+/**
+ * Renders the search results for subcollection "featured" block.
+ */
+function uvl_blocks_featured_search_content() {
+  $content = '';
+
+  $path = current_path();
+  $pathparts = explode('/', $path);
+  $pid = $pathparts[2];
+
+  $query = new EntityFieldQuery();
+  $query->entityCondition('entity_type', 'node')
+        ->entityCondition('bundle', 'subcollection', '=')
+        ->propertyCondition('status', NODE_PUBLISHED)
+        ->fieldCondition('field_collection_identifier', 'value', $pid, '=')
+        ->range(0, 1);
+  $result = $query->execute();
+
+  if (isset($result['node'])) {
+    $obj = end($result['node']);
+    if (is_object($obj)) {
+       $node_id = $obj->nid;
+       $node = node_load($node_id);
+
+      // Only display block content when field_all_items_link is set.
+      if ($node && !empty($node->field_featured_solr_query[LANGUAGE_NONE][0]['value'])) {
+        $query = $node->field_featured_solr_query[LANGUAGE_NONE][0]['value'];
+        if (!empty($query)) {
+          if (module_load_include('inc', 'islandora_solr', 'includes/results')) {
+            $qp = new IslandoraSolrQueryProcessor();
+            $qp->buildQuery($query);
+            $qp->executeQuery();
+            $solrresult = $qp->islandoraSolrResult;
+            if (isset($solrresult['response']['numFound']) && $solrresult['response']['numFound'] > 0) {
+              $islandoraSolrResults = new IslandoraSolrResults();
+              $content = $islandoraSolrResults->printResults($solrresult);
+            }
+          }
+        }
+      }
+    }
+  }
+
   return $content;
 }
 
