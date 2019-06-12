@@ -273,7 +273,13 @@ function uvl_blocks_featured_search_content() {
             $qp->executeQuery();
             $solrresult = $qp->islandoraSolrResult;
             if (isset($solrresult['response']['numFound']) && $solrresult['response']['numFound'] > 0) {
-              $islandoraSolrResults = new IslandoraSolrResults();
+              $show_list = TRUE;
+              if ($show_list === TRUE) {
+                $islandoraSolrResults = new IslandoraSolrResults();
+              }
+              else {
+                $islandoraSolrResults = new IslandoraSolrResultsGrid();
+              }
               $content = $islandoraSolrResults->printResults($solrresult);
             }
           }
