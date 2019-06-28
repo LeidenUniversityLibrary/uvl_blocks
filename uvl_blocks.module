@@ -213,16 +213,16 @@ function uvl_blocks_reset_facets_content(){
 }
 
 /**
- * Renders the show more link for subcollection "featured" block.
+ * Renders the show more link for collection "featured" block.
  */
 function uvl_blocks_featured_readmore_content() {
   $content = '';
 
-  // Get the subcollection node object from current url.
+  // Get the collection node object from current url.
   $alias = drupal_get_path_alias();
   $path = drupal_lookup_path("source", $alias);
   $node = menu_get_object("node", 1, $path);
-  if (!empty($cid = $node->field_collection_identifier[LANGUAGE_NONE][0]['safe_value'])) {
+  if (!empty($cid = $node->field_collection_id[LANGUAGE_NONE][0]['safe_value'])) {
     // Generate link with query parameters for Islandora Solr search.
     $content = l(t(variable_get('featured_link_title', 'See all items')),
       '/islandora/search',
@@ -240,7 +240,7 @@ function uvl_blocks_featured_readmore_content() {
 }
 
 /**
- * Renders the search results for subcollection "featured" block.
+ * Renders the search results for collection "featured" block.
  */
 function uvl_blocks_featured_search_content() {
   $content = '';
@@ -251,9 +251,9 @@ function uvl_blocks_featured_search_content() {
 
   $query = new EntityFieldQuery();
   $query->entityCondition('entity_type', 'node')
-        ->entityCondition('bundle', 'subcollection', '=')
+        ->entityCondition('bundle', 'collection', '=')
         ->propertyCondition('status', NODE_PUBLISHED)
-        ->fieldCondition('field_collection_identifier', 'value', $pid, '=')
+        ->fieldCondition('field_collection_id', 'value', $pid, '=')
         ->range(0, 1);
   $result = $query->execute();
 
@@ -264,8 +264,8 @@ function uvl_blocks_featured_search_content() {
        $node = node_load($node_id);
 
       // Only display block content when field_all_items_link is set.
-      if ($node && !empty($node->field_featured_solr_query[LANGUAGE_NONE][0]['value'])) {
-        $query = $node->field_featured_solr_query[LANGUAGE_NONE][0]['value'];
+      if ($node && !empty($node->field_solr_query_featured[LANGUAGE_NONE][0]['value'])) {
+        $query = $node->field_solr_query_featured[LANGUAGE_NONE][0]['value'];
         if (!empty($query)) {
           if (module_load_include('inc', 'islandora_solr', 'includes/results')) {
             $qp = new IslandoraSolrQueryProcessor();
@@ -304,7 +304,7 @@ function _uvl_blocks_query_node_by_field($pid) {
   $query = new EntityFieldQuery();
 
   $query->entityCondition('entity_type', 'node')
-    ->entityCondition('bundle', ['collection', 'subcollection'])
+    ->entityCondition('bundle', 'collection', '=')
     ->propertyCondition('status', 1)
     ->fieldCondition('field_collection_id', 'value', $pid, '=')
     ->range(0, 1)
