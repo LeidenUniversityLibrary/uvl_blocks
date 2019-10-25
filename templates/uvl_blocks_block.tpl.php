@@ -7,7 +7,6 @@
 $items = $variables['items'];
 
 if (isset($items['button-more']) && isset($items['feat-browser'])): ?>
-?>
 <div class="dc-feat-browser">
   <div class="dc-feat-more">
     <a href="<?php print $items['button-more']['link'] ?>">
