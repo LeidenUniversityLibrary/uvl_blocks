@@ -108,54 +108,57 @@ function uvl_blocks_collection_images_content(){
     // Check if there is a node
     if (isset($result['node'])) {
       $nids = array_keys($result['node']);
-      $node= array_shift(entity_load('node', $nids));
+      $nodes = entity_load('node', $nids);
+      $node = isset($nodes[0]) ? $nodes[0] : NULL;
       $items = array();
       // Add a mor button to the images
       $items['button-more']['text'] = t('Show all items');
       $items['button-more']['link'] =  '/islandora/search?type=dismax&islandora_solr_search_navigation=0&f[0]=RELS_EXT_isMemberOfCollection_uri_ms:%22info\:fedora\/'. str_replace(':', '\:' , $pid).'%22';
 
-      $i = 0;
-      // Get all images
-      foreach ($node->field_intro_image[LANGUAGE_NONE] as $image_file){
-        if ($image_file) {
-
-          $image_path = '';
-          if (isset($image_file['uri'])) {
-            $image_path = $image_file['uri'];
+      if ($node) {
+        $i = 0;
+        // Get all images
+        foreach ($node->field_intro_image[LANGUAGE_NONE] as $image_file){
+          if ($image_file) {
+  
+            $image_path = '';
+            if (isset($image_file['uri'])) {
+              $image_path = $image_file['uri'];
+            }
+            $desc = '';
+            $link = '';
+            $title ='';
+            if(!empty($node->field_intro_image_link[LANGUAGE_NONE][$i]) ){
+              $link = $node->field_intro_image_link[LANGUAGE_NONE][$i];
+              $desc = $link['title'];
+              $title =$link['title'];
+              $link = $link['url'];
+            }
+            $image = theme('image',array(
+              'path' => ($image_path),
+              'title' => $desc,
+              'attributes' => array('class' => 'dc-object-fit'),
+            ));
+  
+            $items['feat-browser'][$i] = array(
+              '#tree' => TRUE,
+              'image' => array(
+                '#prefix' => '<li class="dc-grid-item"><a href="'.
+                  $link.'"><div class="dc-grid-pic">',
+                '#type' => 'markup',
+                '#markup' => $image,
+                '#suffix' => '</div>',
+              ),
+              'title' => array(
+                '#prefix' => '<div class="dc-grid-caption">',
+                '#type' => 'markup',
+                '#markup' => '<h3>'.$title.'</h3><div>'.$desc.'</div>',
+                '#suffix' => '</a></li>',
+              ),
+            );
           }
-          $desc = '';
-          $link = '';
-          $title ='';
-          if(!empty($node->field_intro_image_link[LANGUAGE_NONE][$i]) ){
-            $link = $node->field_intro_image_link[LANGUAGE_NONE][$i];
-            $desc = $link['title'];
-            $title =$link['title'];
-            $link = $link['url'];
-          }
-          $image = theme('image',array(
-            'path' => ($image_path),
-            'title' => $desc,
-            'attributes' => array('class' => 'dc-object-fit'),
-          ));
-
-          $items['feat-browser'][$i] = array(
-            '#tree' => TRUE,
-            'image' => array(
-              '#prefix' => '<li class="dc-grid-item"><a href="'.
-                $link.'"><div class="dc-grid-pic">',
-              '#type' => 'markup',
-              '#markup' => $image,
-              '#suffix' => '</div>',
-            ),
-            'title' => array(
-              '#prefix' => '<div class="dc-grid-caption">',
-              '#type' => 'markup',
-              '#markup' => '<h3>'.$title.'</h3><div>'.$desc.'</div>',
-              '#suffix' => '</a></li>',
-            ),
-          );
+          $i++;
         }
-        $i++;
       }
     }
   }
