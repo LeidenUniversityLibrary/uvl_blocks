@@ -109,13 +109,13 @@ function uvl_blocks_collection_images_content(){
     if (isset($result['node'])) {
       $nids = array_keys($result['node']);
       $nodes = entity_load('node', $nids);
-      $node = isset($nodes[0]) ? $nodes[0] : NULL;
+      $node = reset($nodes);
       $items = array();
       // Add a mor button to the images
       $items['button-more']['text'] = t('Show all items');
       $items['button-more']['link'] =  '/islandora/search?type=dismax&islandora_solr_search_navigation=0&f[0]=RELS_EXT_isMemberOfCollection_uri_ms:%22info\:fedora\/'. str_replace(':', '\:' , $pid).'%22';
 
-      if ($node) {
+      if ($node !== FALSE) {
         $i = 0;
         // Get all images
         foreach ($node->field_intro_image[LANGUAGE_NONE] as $image_file){
