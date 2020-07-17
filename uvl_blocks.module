@@ -115,7 +115,7 @@ function uvl_blocks_collection_images_content(){
       $items['button-more']['text'] = t('Show all items');
       $items['button-more']['link'] =  '/islandora/search?type=dismax&islandora_solr_search_navigation=0&f[0]=RELS_EXT_isMemberOfCollection_uri_ms:%22info\:fedora\/'. str_replace(':', '\:' , $pid).'%22';
 
-      if ($node !== FALSE) {
+      if ($node !== FALSE && isset($node->field_intro_image[LANGUAGE_NONE])) {
         $i = 0;
         // Get all images
         foreach ($node->field_intro_image[LANGUAGE_NONE] as $image_file){
